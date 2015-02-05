@@ -1,18 +1,20 @@
 /*
-	Two Radio Band Controller
-        "ZUYmaster"
+	ZUYmaster
+        - a two radio band controller -
  
  	Describe what it does in layman's terms.  Refer to the components
  	attached to the various pins.
  
  	The circuit:
+
+
  	* list the components attached to each input
  	* list the components attached to each output
  
  	Created 4 Feb 2015
  	rin JG1VGX (jg1vgx@jarl.com)
  
- 	http://github.com/rin3/Two-Radio-Band-Controller
+ 	http://github.com/rin3/ZUYmaster
   */
 
 const int pinRx[] = {
