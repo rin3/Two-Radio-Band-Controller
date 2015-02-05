@@ -2,23 +2,20 @@
 	ZUYmaster
 	- a two radio band controller -
  
- 	An Arduino firmware for a band controller in use with two radio HF contesting environment such as SO2R, M/S and M/2.
+ 	A band controller designed for use with two radio HF contesting environment such as SO2R, M/S and M/2.
  
  	Limitatoins:
-  	This implimentation only works with newer Kenwood/ICOM exciters, two ICE-419B band pass filters and ICOM IC-PW1 amplifiers.
- 	
- 	The circuit:
- 	Describe what it does in layman's terms.  Refer to the components
- 	attached to the various pins.
+  	This implimentation only for a combination of a pair of newer Kenwood/ICOM exciters, ICE-419B band pass filters and ICOM IC-PW1 amplifiers.
  	
   	The circuit consists of three boards:
    	1 - Arduino Mega 2560 board
     	1 - A Mega shield PCB with BPF I/F and IC-PW1 I/O
      	1 - Another PCB for exciter (Kenwood/ICOM) I/O
 
- 	* Input pins
+ 	Arduino pin I/O used:
+  	* Input
 	  (none)
- 	* Output pins
+ 	* Output
  	   4* - LED(green) - L Exciter status
  	   5* - LED(green) - R Exciter status
  	   2* - LED(red) - L IC-PW1 status
@@ -39,7 +36,7 @@
  	  A0* - reed relay - R ICE-419 power control
 	  13* - DIP switch - L Exciter Kenwood/ICOM selection
 	  A1* - DIP switch - R Exciter Kenwood/ICOM selection
- 	* Communications I/O
+ 	* Communications
  	   0/Rx, 1/Tx - Serial  - L Exciter
  	  15/Rx,14/Tx - Serial3 - R Exciter
  	  19/Rx,18/Tx - Serial1 - L IC-PW1
