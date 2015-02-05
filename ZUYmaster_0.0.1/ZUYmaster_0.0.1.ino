@@ -1,6 +1,6 @@
-
 /*
-	Sketch title
+	Two Radio Band Controller
+        "ZUYmaster"
  
  	Describe what it does in layman's terms.  Refer to the components
  	attached to the various pins.
@@ -9,15 +9,11 @@
  	* list the components attached to each input
  	* list the components attached to each output
  
- 	Created day month year
- 	By author's name
- 	Modified day month year
- 	By author's name
+ 	Created 4 Feb 2015
+ 	rin JG1VGX (jg1vgx@jarl.com)
  
- 	http://url/of/online/tutorial.cc
- 
- */
-
+ 	http://github.com/rin3/Two-Radio-Band-Controller
+  */
 
 const int pinRx[] = {
   0, 19, 17, 15};
