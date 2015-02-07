@@ -1,12 +1,12 @@
 #include "RigUtil.h"
 
-#define UNO
-
 /*
 	ZUYmaster
  	- a two radio band controller -
  
  	A band controller designed for use with two radio HF contesting environment such as SO2R, M/S and M/2.
+ 
+ Please set Transceive OFF for your ICOM radios.
  
  	Limitations:
  	This implimentation only works for a combination of two each of newer Kenwood/ICOM exciters, ICE-419B band pass filters and ICOM IC-PW1 amplifiers.
@@ -56,45 +56,59 @@
 ///////////////////////////////
 
 // loop iteration delay time (msec)
-const int iDelay = 500;
+const int DELAY = 200;
 
 // Exciters I/F
 // Communication: Serial/L, Serial3/R
-const byte bMakeSW[2] = {    // Kenwood/ICOM selection L,R
-  12,A1};
-const byte bExcLED[2] = {    // status LEDs L,R
-  5,4};
-const int iExcSpeed[2] = {   // COM speed L,R
+const byte MAKE_PIN[2] = {    // Kenwood/ICOM selection L,R pins
+  12, A1};
+const byte EXC_LED[2] = {    // status LEDs L,R pins
+  5, 4};
+const byte EXC_HEX[2] = { 
+  0x7C, 0x7C};
+const int EXC_SPEED[2] = {   // COM speed L,R
   9600, 9600};
+const int KENWOOD_PARAM = SERIAL_8N2;  // serial communcation parameters
+const int ICOM_PARAM = SERIAL_8N1;
+const int YAESU_PARAM = SERIAL_8N2;
 
 // IC-PW1 I/F
 // Communication: Serial1/L, Serial2/R
-const byte bAmpLED[2] = {    // status LEDs L,R
-  2,3};
-const int iAmpSpeed[2] = {   // COM speed L,R
+const byte AMP_LED[2] = {    // status LEDs L,R pins
+  2, 3};
+const byte AMP_HEX[2] = { 
+  0x7C, 0x7C};
+const int AMP_SPEED[2] = {   // COM speed L,R
   9600, 9600};
 
 // ICE-419 I/F
-const byte bBPFPWR[2] = {    // powering relay L,R
-  6,A0};
-const byte bBPF[2][6] = {    // band control
+const byte BPF_PWR[2] = {    // powering relay L,R pins
+  6, A0};
+const byte BPF[2][6] = {    // band control pins
   {
-    7,8,9,10,11,13      }      // 160,80,40,20,15,10m/L
+    7, 8, 9, 10, 11, 13                                        }      // 160,80,40,20,15,10m/L
   ,
   {
-    A2,A3,A4,A5,A6,A7      }   // 160,80,40,20,15,10m/R
+    A2, A3, A4, A5, A6, A7                                        }   // 160,80,40,20,15,10m/R
 };
+const int BPF_BANDS[10] = {
+  // corresponding the array index above, NO_MATCH is for WARC, 6m
+  0, 1, 2, NO_MATCH, 3, NO_MATCH, 4, NO_MATCH, 5, NO_MATCH};
+
+// ICOM HEX code for ZUYmaster
+const byte ZUY_HEX = 0xE0;
 
 ///////////////////////////////
 // Variables
 ///////////////////////////////
 
 // Exciters
-byte bMake[2];    // Make: Kenwood = 0, ICOM = 1, Yaesu = 2
-long lFreq[2];    // Frequency
+byte bMake[2];    // make: Kenwood = 0, ICOM = 1, Yaesu = 2
+long lFreq[2];    // frequency
+int iBand[2];     // band
 
-int i, j, k;
-
+// Pointers
+HardwareSerial *pExcSer[2], *pAmpSer[2];
 RigUtil *pExc[2], *pAmp[2];
 
 ///////////////////////////////
@@ -103,53 +117,53 @@ RigUtil *pExc[2], *pAmp[2];
 
 void setup() {
   // pin modes
-  for (i = 0; i < 2; i++) {
-    pinMode(bMakeSW[i], INPUT_PULLUP);
-    pinMode(bExcLED[i], OUTPUT);
-    pinMode(bAmpLED[i], OUTPUT);
-    pinMode(bBPFPWR[i], OUTPUT);
-    for (j = 0; j < 6; j++)
-      pinMode(bBPF[i][j], OUTPUT);
+  for (int i = 0; i < 2; i++) {
+    pinMode(MAKE_PIN[i], INPUT_PULLUP);
+    pinMode(EXC_LED[i], OUTPUT);
+    pinMode(AMP_LED[i], OUTPUT);
+    pinMode(BPF_PWR[i], OUTPUT);
+    for (int j = 0; j < 6; j++)
+      pinMode(BPF[i][j], OUTPUT);
   }
 
   // put LEDs OFF, BPF PWR off
-  for (i = 0; i < 2; i++) {
-    digitalWrite(bExcLED[i], LOW);
-    digitalWrite(bAmpLED[i], LOW);
-    digitalWrite(bBPFPWR[i], LOW);
+  for (int i = 0; i < 2; i++) {
+    digitalWrite(EXC_LED[i], LOW);
+    digitalWrite(AMP_LED[i], LOW);
+    digitalWrite(BPF_PWR[i], LOW);
   }
 
   // read Make DIPSW
-  for (i = 0; i < 2; i++)
-    if (digitalRead(bMakeSW[i]) == HIGH)
+  for (int i = 0; i < 2; i++)
+    if (digitalRead(MAKE_PIN[i]) == HIGH)
       bMake[i] = KENWOOD;
     else
       bMake[i] = ICOM;
 
-  // creating rig objects
-  RigUtil excL(&Serial, bMake[0]);
-#ifndef UNO
-  RigUtil excR(&Serial3, bMake[1]);
-  RigUtil ampL(&Serial1, ICOM);
-  RigUtil ampR(&Serial2, ICOM);
-  pExc[0] = &excL;
-  pExc[1] = &excR;
-  pAmp[0] = &ampL;
-  pAmp[1] = &ampR;
-#else
-  pExc[0] = &excL;
-  pExc[1] = &excL;
-  pAmp[0] = &excL;
-  pAmp[1] = &excL;
-#endif
+  // set HardwareSerial pointers
+  pExcSer[0] = &Serial;
+  pExcSer[1] = &Serial3;
+  pAmpSer[0] = &Serial1;
+  pAmpSer[1] = &Serial2;
 
-  // initializing communication
-  Serial.begin(iExcSpeed[0]);
-#ifndef UNO
-  Serial1.begin(iExcSpeed[1]);
-  Serial2.begin(iAmpSpeed[0]);
-  Serial3.begin(iAmpSpeed[1]);
-#endif
+  // create rig objects and start communication
+  for (int i = 0; i < 2; i++) {
+    // exciter
+    if (bMake[i] != ICOM) {
+      // Kenwood or Yaesu
+      pExc[i] = new RigUtil(pExcSer[i], bMake[i]);
+      pExcSer[i]->begin(EXC_SPEED[i], KENWOOD_PARAM);    // Yaesu yet unsupported
+    } 
+    else {
+      // ICOM
+      pExc[i] = new RigUtil(pExcSer[i], bMake[i], EXC_HEX[i], ZUY_HEX);
+      pExcSer[i]->begin(EXC_SPEED[i], ICOM_PARAM);
+    }
+
+    // amplifier
+    pAmp[i] = new RigUtil(pAmpSer[i], ICOM, AMP_HEX[i], ZUY_HEX);
+    pAmpSer[i]->begin(AMP_SPEED[i], ICOM_PARAM);
+  }
 }
 
 ///////////////////////////////
@@ -157,37 +171,51 @@ void setup() {
 ///////////////////////////////
 
 void loop() {
-
-  // for each side of radio sets
-  for (i = 0; i < 2; i++) {
-    // reading exciter frequency
+  // for each side of radios, BPFs and amplifiers
+  for (int i = 0; i < 2; i++) {
+    // read exciter frequency
     lFreq[i] = pExc[i]->getFreq();
-    
-    Serial.println(lFreq[i]);
 
-    // HF contest band?
+    // put exciter LED
+    if (lFreq[i] != NOFREQ)
+      digitalWrite(EXC_LED[i], HIGH);
+    else
+      digitalWrite(EXC_LED[i], LOW);
 
-    // put LEDs
-    // set BPF
+    // get band index (0..9), cf.BANDS[10][3] array in RigUtil.h
+    iBand[i] = pExc[i]->getBand(lFreq[i]);
 
-    // set Amp
+    // control BPF
+    if (iBand[i] != NO_MATCH) {
+      // HF or 6m (incl. WARC) band
+      int idx = BPF_BANDS[iBand[i]];
+      if (idx != NO_MATCH) { 
+        // HF contest band
+        digitalWrite(BPF_PWR[i], HIGH);  // power on BPF
+        digitalWrite(BPF[i][idx], HIGH);  // switch band on BPF
+      } 
+      else {
+        digitalWrite(BPF_PWR[i], LOW);  // power off BPF
+      }
+    } 
+    else {
+      digitalWrite(BPF_PWR[i], LOW);  // power off BPF
+    }
 
+    // set amplifier band and put LED
+    if (pAmp[i]->setFreq(lFreq[i]) == true)
+      digitalWrite(AMP_LED[i], HIGH);
+    else
+      digitalWrite(AMP_LED[i], LOW);
   }
 
   // check band clashing
 
-  delay(iDelay);
+  delay(DELAY);
 }
 
 ///////////////////////////////
 // Functions 
 ///////////////////////////////
-
-
-
-
-
-
-
 
 
