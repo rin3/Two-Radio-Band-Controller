@@ -1,12 +1,14 @@
 #include "RigUtil.h"
 
+// switch environment, test @MEGURO or real
+#define MEGURO
 /*
 	ZUYmaster
  	- a two radio band controller -
  
  	A band controller designed for use with two radio HF contesting environment such as SO2R, M/S and M/2.
  
- Please set Transceive OFF for your ICOM radios.
+	Please set Transceive OFF for your ICOM radios.
  
  	Limitations:
  	This implimentation only works for a combination of two each of newer Kenwood/ICOM exciters, ICE-419B band pass filters and ICOM IC-PW1 amplifiers.
@@ -56,7 +58,7 @@
 ///////////////////////////////
 
 // loop iteration delay time (msec)
-const int DELAY = 200;
+const int DELAY = 100;    // 20 is way too short, 50 is ok, 200 seems clumsy
 
 // Exciters I/F
 // Communication: Serial/L, Serial3/R
@@ -65,10 +67,15 @@ const byte MAKE_PIN[2] = {    // Kenwood/ICOM selection L,R pins
 const byte EXC_LED[2] = {    // status LEDs L,R pins
   5, 4};
 const byte EXC_HEX[2] = { 
-  0x7C, 0x7C};
+#ifdef MEGURO
+  0x7C, 0x7C      // test w/IC-9100
+#else
+  0x7A, 0x7A      // real IC-7600
+#endif
+};
 const int EXC_SPEED[2] = {   // COM speed L,R
   9600, 9600};
-const int KENWOOD_PARAM = SERIAL_8N2;  // serial communcation parameters
+const int KENWOOD_PARAM = SERIAL_8N1;  // serial communcation parameters
 const int ICOM_PARAM = SERIAL_8N1;
 const int YAESU_PARAM = SERIAL_8N2;
 
@@ -77,7 +84,8 @@ const int YAESU_PARAM = SERIAL_8N2;
 const byte AMP_LED[2] = {    // status LEDs L,R pins
   2, 3};
 const byte AMP_HEX[2] = { 
-  0x7C, 0x7C};
+  //  0x54, 0x54};               // default
+  0x00, 0x00};               // better to use broadcast to inhibit PW1's Asynchronous 10 sec polls
 const int AMP_SPEED[2] = {   // COM speed L,R
   9600, 9600};
 
@@ -86,17 +94,18 @@ const byte BPF_PWR[2] = {    // powering relay L,R pins
   6, A0};
 const byte BPF[2][6] = {    // band control pins
   {
-    7, 8, 9, 10, 11, 13                                        }      // 160,80,40,20,15,10m/L
+    7, 8, 9, 10, 11, 13                                                }      // 160,80,40,20,15,10m/L
   ,
   {
-    A2, A3, A4, A5, A6, A7                                        }   // 160,80,40,20,15,10m/R
+    A2, A3, A4, A5, A6, A7                                                }   // 160,80,40,20,15,10m/R
 };
 const int BPF_BANDS[10] = {
   // corresponding the array index above, NO_MATCH is for WARC, 6m
   0, 1, 2, NO_MATCH, 3, NO_MATCH, 4, NO_MATCH, 5, NO_MATCH};
 
 // ICOM HEX code for ZUYmaster
-const byte ZUY_HEX = 0xE0;
+//const byte ZUY_HEX = 0xE0;  // PC
+const byte ZUY_HEX = 0x7A;    // IC-7600 for compatibility reasons
 
 ///////////////////////////////
 // Variables
@@ -192,8 +201,13 @@ void loop() {
       if (idx != NO_MATCH) { 
         // HF contest band
         digitalWrite(BPF_PWR[i], HIGH);  // power on BPF
-        digitalWrite(BPF[i][idx], HIGH);  // switch band on BPF
-      } 
+        for (int j = 0; j < 6; j++) {
+          if (j == idx)
+            digitalWrite(BPF[i][j], HIGH);  // switch on the band at BPF
+          else
+            digitalWrite(BPF[i][j], LOW);   // switch off other bands
+        } 
+      }
       else {
         digitalWrite(BPF_PWR[i], LOW);  // power off BPF
       }
@@ -203,10 +217,12 @@ void loop() {
     }
 
     // set amplifier band and put LED
-    if (pAmp[i]->setFreq(lFreq[i]) == true)
+    if (pAmp[i]->setFreq(lFreq[i]) == true) {
       digitalWrite(AMP_LED[i], HIGH);
-    else
+    }    
+    else {
       digitalWrite(AMP_LED[i], LOW);
+    }
   }
 
   // check band clashing
@@ -217,5 +233,9 @@ void loop() {
 ///////////////////////////////
 // Functions 
 ///////////////////////////////
+
+
+
+
 
 

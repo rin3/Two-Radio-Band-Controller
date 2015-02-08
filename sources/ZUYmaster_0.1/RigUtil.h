@@ -17,7 +17,7 @@ const int KENWOOD_REPLY_LEN = 38;
 const int ICOM_QUERY_LEN = 6;       // frequency query
 const int ICOM_REPLY_LEN = 11;      // frequency reply
 const int ICOM_TRANSFER_LEN = 11;   // frequency transfer
-const int ICOM_RESPONSE_LEN = 6;    // OK(0xFB) or NG(0xFA) response
+//const int ICOM_RESPONSE_LEN = 6;    // OK(0xFB) or NG(0xFA) response
 
 // Band boundaries
 const long BANDS[10][3] = {
@@ -47,8 +47,8 @@ const byte EDGE_L = 1;
 const byte EDGE_H = 2;
 
 // ICOM CI-V dialect
-const byte ACK_OK = 0xFB;
-const byte ACK_NG = 0xFA;
+//const byte ACK_OK = 0xFB;
+//const byte ACK_NG = 0xFA;
 
 // other
 const long NOFREQ = 0;

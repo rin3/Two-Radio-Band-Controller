@@ -28,12 +28,12 @@ long RigUtil::getFreq() {
   switch (_bMake) {
   case KENWOOD:
     queryFreqKenwood();
-    delay(100);    // shall we wait here?
+//    delay(100);    // shall we wait here?
     retrieveFreqKenwood();
     break;
   case ICOM:
     queryFreqICOM();
-    delay(100);    // shall we wait here?
+//    delay(100);    // shall we wait here?
     retrieveFreqICOM();
     break;
   case YAESU:
@@ -52,7 +52,7 @@ boolean RigUtil::setFreq(long lFreq) {
     break;
   case ICOM:
     transferFreqICOM(lFreq);
-    delay(100);    // shall we wait here?
+//    delay(100);    // shall we wait here?
     return retrieveResponseICOM();
     break;
   case YAESU:
@@ -103,8 +103,8 @@ void RigUtil::queryFreqKenwood() {
 
 // retrieve frequency
 long RigUtil::retrieveFreqKenwood() {
-  int i;
-  if ((i = _pSerial->available()) == KENWOOD_REPLY_LEN) {
+  int i = _pSerial->available();
+  if (i == KENWOOD_REPLY_LEN) {
     // rig responded 
     if (checkFreqPreambleKenwood() == true) {
       lFreq = decodeFreqKenwood();
@@ -204,7 +204,8 @@ void RigUtil::transferFreqICOM(long lFreq) {
   _pSerial->write(0xFE);
   _pSerial->write(_bToHex);
   _pSerial->write(_bFromHex);
-  _pSerial->write(0x05);
+  //  _pSerial->write(0x05);      // $05 won't work for PW1
+  _pSerial->write(0x00);        // PW1 only responds to $00 command
   for (int i = 0; i < 5; i++) {
     _pSerial->write((byte)cBuf[i]);
   }
@@ -221,30 +222,16 @@ void RigUtil::encodeFreqICOM(byte* bBuf, long lFreq) {
 }
 
 boolean RigUtil::retrieveResponseICOM() {
-  int i;
-  if ((i = _pSerial->available()) == ICOM_TRANSFER_LEN + ICOM_RESPONSE_LEN) {
-    // rig responded
-    chopRxBuffer(ICOM_TRANSFER_LEN);  // throw away reflected command itself
-    if (checkAddrPreambleICOM() == true) {
-      int j = _pSerial->read();
-      if (j == ACK_OK) {
-        _pSerial->read();  // remove the last 0xFD;
-        return true;
-      } 
-//      else if (j == ACK_NG) {
-//        _pSerial->read();  // remove the last 0xFD;
-//        return false;
-//      }
-//      // unsuccessful, neither 0xFB nor 0xFA (shouldn't happen)  
-      // unsuccessful, NG response
-    } 
-    // unsuccessful, incorrect address preamble
-  } 
-  // unsuccessful, rig unresponsive
-
-  // flush buffer including postamble if any
+  int i = _pSerial->available();
   flushRxBuffer();
-  return false;  // return as failed
+  if (i == ICOM_TRANSFER_LEN) {
+    // command echoed back (rig should be responded)
+    return true;
+  } 
+  else {
+    // unsuccessful, rig unresponsive
+    return false;  // return as failed
+  }
 }
 
 ///////////////////////////////
@@ -252,3 +239,6 @@ boolean RigUtil::retrieveResponseICOM() {
 ///////////////////////////////
 
 // unimplemented
+
+
+
