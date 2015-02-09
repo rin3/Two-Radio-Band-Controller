@@ -8,7 +8,7 @@
  
  	A band controller designed for use with two radio HF contesting environment such as SO2R, M/S and M/2.
  
-	Please set Transceive OFF for your ICOM radios.
+ 	Please set Transceive OFF for your ICOM radios.
  
  	Limitations:
  	This implimentation only works for a combination of two each of newer Kenwood/ICOM exciters, ICE-419B band pass filters and ICOM IC-PW1 amplifiers.
@@ -94,10 +94,10 @@ const byte BPF_PWR[2] = {    // powering relay L,R pins
   6, A0};
 const byte BPF[2][6] = {    // band control pins
   {
-    7, 8, 9, 10, 11, 13                                                }      // 160,80,40,20,15,10m/L
+    7, 8, 9, 10, 11, 13                                                        }      // 160,80,40,20,15,10m/L
   ,
   {
-    A2, A3, A4, A5, A6, A7                                                }   // 160,80,40,20,15,10m/R
+    A2, A3, A4, A5, A6, A7                                                        }   // 160,80,40,20,15,10m/R
 };
 const int BPF_BANDS[10] = {
   // corresponding the array index above, NO_MATCH is for WARC, 6m
@@ -135,11 +135,11 @@ void setup() {
       pinMode(BPF[i][j], OUTPUT);
   }
 
-  // put LEDs OFF, BPF PWR off
+  // put LEDs OFF, BPF PWR on
   for (int i = 0; i < 2; i++) {
     digitalWrite(EXC_LED[i], LOW);
     digitalWrite(AMP_LED[i], LOW);
-    digitalWrite(BPF_PWR[i], LOW);
+    digitalWrite(BPF_PWR[i], HIGH);
   }
 
   // read Make DIPSW
@@ -195,26 +195,15 @@ void loop() {
     iBand[i] = pExc[i]->getBand(lFreq[i]);
 
     // control BPF
+    int iPosit;
     if (iBand[i] != NO_MATCH) {
       // HF or 6m (incl. WARC) band
-      int idx = BPF_BANDS[iBand[i]];
-      if (idx != NO_MATCH) { 
-        // HF contest band
-        digitalWrite(BPF_PWR[i], HIGH);  // power on BPF
-        for (int j = 0; j < 6; j++) {
-          if (j == idx)
-            digitalWrite(BPF[i][j], HIGH);  // switch on the band at BPF
-          else
-            digitalWrite(BPF[i][j], LOW);   // switch off other bands
-        } 
-      }
-      else {
-        digitalWrite(BPF_PWR[i], LOW);  // power off BPF
-      }
+      iPosit = BPF_BANDS[iBand[i]];
     } 
     else {
-      digitalWrite(BPF_PWR[i], LOW);  // power off BPF
+      iPosit = NO_MATCH; 
     }
+    setBPFRelays(i, iPosit);
 
     // set amplifier band and put LED
     if (pAmp[i]->setFreq(lFreq[i]) == true) {
@@ -234,8 +223,22 @@ void loop() {
 // Functions 
 ///////////////////////////////
 
-
-
-
-
+// set BPF band relays
+void setBPFRelays(int iSide, int iPosit) {
+  if (iPosit != NO_MATCH) {
+    // HF contest band
+    for (int j = 0; j < 6; j++) {
+      if (j == iPosit)
+        digitalWrite(BPF[iSide][j], HIGH);  // switch on the band at BPF
+      else
+        digitalWrite(BPF[iSide][j], LOW);   // switch off other bands
+    } 
+  } 
+  else {
+    // outside HF contest bands (incl. WARC, 6m)
+    for (int j = 0; j < 6; j++) {
+      digitalWrite(BPF[iSide][j], LOW);     // switch off all relays
+    }
+  }
+}
 
