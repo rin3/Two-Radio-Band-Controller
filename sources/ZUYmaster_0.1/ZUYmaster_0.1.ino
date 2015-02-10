@@ -1,7 +1,7 @@
 #include "RigUtil.h"
 
 // switch environment, test @MEGURO or real
-#define MEGURO
+//#define MEGURO
 /*
 	ZUYmaster
  	- a two radio band controller -
