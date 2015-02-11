@@ -58,7 +58,7 @@
 ///////////////////////////////
 
 // loop iteration delay time (msec)
-const int DELAY = 100;    // 20 is way too short, 50 is ok, 200 seems clumsy
+const int DELAY = 80;    // 20 is way too short, 50 is ok, 200 seems clumsy
 
 // LED modes
 const byte LED_OFF = 0;
@@ -67,8 +67,9 @@ const byte LED_SLOW_BLINK = 2;
 const byte LED_FAST_BLINK = 3;
 
 // LED blink intervals
-const unsigned long FAST_BLINK = 500;    // ON and OFF times are equal
-const unsigned long SLOW_BLINK_ON = 100;
+// each value must be greater than DELAY for it to work as intended
+const unsigned long FAST_BLINK = 500;      // ON and OFF times are equal
+const unsigned long SLOW_BLINK_ON = 100; 
 const unsigned long SLOW_BLINK_OFF = 900;
 
 // Exciters I/F
@@ -105,10 +106,10 @@ const byte BPF_PWR[2] = {    // powering relay L,R pins
   6, A0};
 const byte BPF[2][6] = {    // band control pins
   {
-    7, 8, 9, 10, 11, 13                                                                }      // 160,80,40,20,15,10m/L
+    7, 8, 9, 10, 11, 13                                                                                      }      // 160,80,40,20,15,10m/L
   ,
   {
-    A2, A3, A4, A5, A6, A7                                                                }   // 160,80,40,20,15,10m/R
+    A2, A3, A4, A5, A6, A7                                                                                      }   // 160,80,40,20,15,10m/R
 };
 const int BPF_BANDS[10] = {
   // corresponding the array index above, NO_MATCH is for WARC, 6m
@@ -136,8 +137,10 @@ byte excLEDState[2] = {     // set initial states
   LOW, LOW};  // green
 byte ampLEDState[2] = {
   LOW, LOW};  // red
-unsigned long prevMillis = 0;    // holds last millis for measuring intervals
-unsigned long currMillis;        // holds current millis for comparisons
+unsigned long lastMillisFast;        // holds start of the last blink in millis for measuring intervals
+unsigned long elapMillisFast;        // holds elapsed millis since the start
+unsigned long lastMillisSlow;
+unsigned long elapMillisSlow;
 
 // Pointers
 HardwareSerial *pExcSer[2], *pAmpSer[2];
@@ -196,6 +199,9 @@ void setup() {
     pAmp[i] = new RigUtil(pAmpSer[i], ICOM, AMP_HEX[i], ZUY_HEX);
     pAmpSer[i]->begin(AMP_SPEED[i], ICOM_PARAM);
   }
+
+  // initialise blink timers
+  lastMillisFast = lastMillisSlow = millis();
 }
 
 ///////////////////////////////
@@ -229,30 +235,35 @@ void loop() {
     setBPFRelays(i, iPosit);
 
     // set amplifier band and put LED
-    if (pAmp[i]->setFreq(lFreq[i]) == true)
-      ampLEDMode[i] = LED_ON;
-    else
-      ampLEDMode[i] = LED_OFF;
+    ampLEDMode[i] = LED_OFF;
+    if (lFreq[i] != NOFREQ)
+      if (pAmp[i]->setFreq(lFreq[i]) == true)
+        ampLEDMode[i] = LED_ON;
   }
 
-  // check for abberant band status ('out of band' and band clashing) and set LED states accordingly
+  // check for abberant band status ('out of band' and band clashing) and put LEDs blink accordingly
   for (int i = 0; i < 2; i++) {
-    if (iBand[i] == NO_MATCH) {  // out of ham bands of interest
-      excLEDMode[i] = LED_SLOW_BLINK;    // if out of ham bands, both exciter and amplifier LEDs blink
-      ampLEDMode[i] = LED_SLOW_BLINK;
-    } 
-    // inside ham bands of interest
-    else if (iBand[0] == iBand[1]) {  // this part redundantly runs twice for each i (0,1)
-      // bands clash!!
-      excLEDMode[0] = excLEDMode[1] = LED_FAST_BLINK;
-      ampLEDMode[0] = ampLEDMode[1] = LED_FAST_BLINK;
+    if (excLEDMode[i] == LED_ON) {
+      // this side of exciter responded with freq
+      if (iBand[i] == NO_MATCH) {
+        // out of ham bands of interest
+        excLEDMode[i] = LED_SLOW_BLINK;    // both exciter and amplifier LEDs will slow blink
+        ampLEDMode[i] = LED_SLOW_BLINK;
+      } 
+      // inside ham bands of interest
+      else if (iBand[0] == iBand[1]) {  // this part redundantly runs twice for each i (0,1)
+        // bands clash!!
+        excLEDMode[0] = excLEDMode[1] = LED_FAST_BLINK;
+        ampLEDMode[0] = ampLEDMode[1] = LED_FAST_BLINK;
+      }
     }
   }
 
   // actually put LEDs
-  currMillis = millis();
-  putLEDs((byte*)EXC_LED, excLEDMode, excLEDState);
-  putLEDs((byte*)AMP_LED, ampLEDMode, ampLEDState);
+  elapMillisFast = millis() - lastMillisFast;
+  elapMillisSlow = millis() - lastMillisSlow;
+  putLEDs(EXC_LED, excLEDMode, excLEDState);
+  putLEDs(AMP_LED, ampLEDMode, ampLEDState);
 
   delay(DELAY);
 }
@@ -280,47 +291,52 @@ void setBPFRelays(int iSide, int iPosit) {
   }
 }
 
-// LED control
-void putLEDs(byte *pLEDs, byte *pModes, byte *pStates) {
-  for (int i = 0; i < 2; i++) {
-    switch (pModes[i]) {
-    case LED_OFF:
-      digitalWrite(pLEDs[i], LOW);
-      break;
-    case LED_ON:
-      digitalWrite(pLEDs[i], HIGH);
-      break;
-    case LED_SLOW_BLINK:
-      if (currMillis - prevMillis >= SLOW_BLINK_OFF && pStates[i] == LOW) {
-        prevMillis = currMillis;
-        pStates[i] = HIGH;
-        digitalWrite(pLEDs[i], HIGH);  // turn on for a blink
-      } 
-      else if (currMillis - prevMillis >= SLOW_BLINK_ON && pStates[i] == HIGH) {
-        prevMillis = currMillis;
-        pStates[i] = LOW;
-        digitalWrite(pLEDs[i], LOW);   // turn off for a blink
+// LED control (incl. blinking)
+void putLEDs(const byte *pLEDs, byte *pModes, byte *pStates) {
+  if (pModes[0] == LED_FAST_BLINK) {
+    // for fast blinks, do jobs for both LEDs at the same time
+    if (elapMillisFast < FAST_BLINK) {
+      pStates[0] = HIGH;
+      pStates[1] = LOW;
+      digitalWrite(pLEDs[0], HIGH);  // turn on L LED for a blink
+      digitalWrite(pLEDs[1], LOW);   // turn off R LED for a blink
+    } 
+    else if (elapMillisFast >= FAST_BLINK && elapMillisFast < 2 * FAST_BLINK) {
+      pStates[0] = LOW;
+      pStates[1] = HIGH;
+      digitalWrite(pLEDs[0], LOW);   // turn off L LED for a blink
+      digitalWrite(pLEDs[1], HIGH);  // turn on R LED for a blink
+    } 
+    else if (elapMillisFast >= 2 * FAST_BLINK) {
+      lastMillisFast = millis();
+    }
+  } 
+  else {
+    // either LED_OFF, LED_ON or LED_SLOW_BLINK
+    // do separately for each side
+    for (int i = 0; i < 2; i++) {
+      switch (pModes[i]) {
+      case LED_OFF:
+        digitalWrite(pLEDs[i], LOW);
+        break;
+      case LED_ON:
+        digitalWrite(pLEDs[i], HIGH);
+        break;
+      case LED_SLOW_BLINK:
+        if (elapMillisSlow < SLOW_BLINK_ON) {
+          pStates[i] = HIGH;
+          digitalWrite(pLEDs[i], HIGH);  // turn on for a blink
+        } 
+        else if (elapMillisSlow >= SLOW_BLINK_ON && elapMillisSlow < SLOW_BLINK_ON + SLOW_BLINK_OFF) {
+          pStates[i] = LOW;
+          digitalWrite(pLEDs[i], LOW);   // turn off for a blink
+        } 
+        else if (elapMillisSlow >= SLOW_BLINK_ON + SLOW_BLINK_OFF) {
+          lastMillisSlow = millis();
+        }
+        break;
       }
-      break;
-    case LED_FAST_BLINK:
-      if (currMillis - prevMillis >= FAST_BLINK && pStates[0] == LOW) {
-        prevMillis = currMillis;
-        pStates[0] = HIGH;
-        pStates[1] = LOW;
-        digitalWrite(pLEDs[0], HIGH);  // turn on L LED for a blink
-        digitalWrite(pLEDs[1], LOW);   // turn off R LED for a blink
-      } 
-      else if (currMillis - prevMillis >= FAST_BLINK && pStates[0] == HIGH) {
-        prevMillis = currMillis;
-        pStates[0] = LOW;
-        pStates[1] = HIGH;
-        digitalWrite(pLEDs[0], LOW);   // turn off L LED for a blink
-        digitalWrite(pLEDs[1], HIGH);  // turn on R LED for a blink
-      }
-      break;  
     }
   }
 }
-
-
 
