@@ -5,4 +5,9 @@ Initial working version for the prototype hardware.
 - BPF is always powered.
 - Flashing LEDs supported. Fastly flashes when out of ham bands, slowly (L and R alternately) flashes when clashing of bands.
 
-0.2 (currently working on)
+0.2 (2015/2/15)
+- BPF is again powered off while outside the pass bands.
+- Small coding fix (constructors).
+
+0.3 (currently working on, started coding for a release version)
+- 
