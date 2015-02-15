@@ -1,7 +1,7 @@
 #include "RigUtil.h"
 
 // switch environment, test @MEGURO or real
-//#define MEGURO
+#define MEGURO
 /*
 	ZUYmaster
  	- a two radio band controller -
@@ -161,11 +161,11 @@ void setup() {
       pinMode(BPF[i][j], OUTPUT);
   }
 
-  // put LEDs OFF, BPF PWR on
+  // put LEDs OFF, BPF PWR off
   for (int i = 0; i < 2; i++) {
     digitalWrite(EXC_LED[i], LOW);
     digitalWrite(AMP_LED[i], LOW);
-    digitalWrite(BPF_PWR[i], HIGH);
+    digitalWrite(BPF_PWR[i], LOW);
   }
 
   // read Make DIPSW
@@ -186,18 +186,15 @@ void setup() {
     // exciter
     if (bMake[i] != ICOM) {
       // Kenwood or Yaesu
-      pExc[i] = new RigUtil(pExcSer[i], bMake[i]);
-      pExcSer[i]->begin(EXC_SPEED[i], KENWOOD_PARAM);    // Yaesu yet unsupported
+      pExc[i] = new RigUtil(pExcSer[i], EXC_SPEED[i], KENWOOD_PARAM, bMake[i]);
     } 
     else {
       // ICOM
-      pExc[i] = new RigUtil(pExcSer[i], bMake[i], EXC_HEX[i], ZUY_HEX);
-      pExcSer[i]->begin(EXC_SPEED[i], ICOM_PARAM);
+      pExc[i] = new RigUtil(pExcSer[i], EXC_SPEED[i], ICOM_PARAM, bMake[i], EXC_HEX[i], ZUY_HEX);
     }
 
     // amplifier
-    pAmp[i] = new RigUtil(pAmpSer[i], ICOM, AMP_HEX[i], ZUY_HEX);
-    pAmpSer[i]->begin(AMP_SPEED[i], ICOM_PARAM);
+    pAmp[i] = new RigUtil(pAmpSer[i], AMP_SPEED[i], ICOM_PARAM, ICOM, AMP_HEX[i], ZUY_HEX);
   }
 
   // initialise blink timers
@@ -276,6 +273,7 @@ void loop() {
 void setBPFRelays(int iSide, int iPosit) {
   if (iPosit != NO_MATCH) {
     // HF contest band
+    digitalWrite(BPF_PWR[iSide], HIGH);     // power on BPF
     for (int j = 0; j < 6; j++) {
       if (j == iPosit)
         digitalWrite(BPF[iSide][j], HIGH);  // switch on the band at BPF
@@ -285,9 +283,10 @@ void setBPFRelays(int iSide, int iPosit) {
   } 
   else {
     // outside HF contest bands (incl. WARC, 6m)
-    for (int j = 0; j < 6; j++) {
-      digitalWrite(BPF[iSide][j], LOW);     // switch off all relays
-    }
+//    for (int j = 0; j < 6; j++) {
+//      digitalWrite(BPF[iSide][j], LOW);     // switch off all relays
+//    }
+    digitalWrite(BPF_PWR[iSide], LOW);      // power off BPF
   }
 }
 

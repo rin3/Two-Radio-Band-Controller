@@ -61,8 +61,8 @@ const int NO_MATCH = -1;
 class RigUtil { 
 public:
   // rig objects
-  RigUtil(HardwareSerial *pSerial, byte bMake);  // Kenwood, Yaesu
-  RigUtil(HardwareSerial *pSerial, byte bMake, byte bToHex, byte bFromHex);  // ICOM
+  RigUtil(HardwareSerial *pSerial, int iCOMSpeed, int iCOMParam, byte bMake);  // Kenwood, Yaesu
+  RigUtil(HardwareSerial *pSerial, int iCOMSpeed, int iCOMParam, byte bMake, byte bToHex, byte bFromHex);  // ICOM
   // functions
   long getFreq();
   boolean setFreq(long lFreq);
