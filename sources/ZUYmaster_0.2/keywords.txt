@@ -1,4 +1,0 @@
-RigUtil KEYWORD1
-getFreq KEYWORD2
-setFreq KEYWORD2
-getBand KEYWORD2
