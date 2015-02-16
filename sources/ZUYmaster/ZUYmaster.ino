@@ -1,7 +1,7 @@
 #include "RigUtil.h"
 
 // switch environment, test @MEGURO or real
-//#define MEGURO
+#define MEGURO
 /*
 	ZUYmaster
  	- a two radio band controller -
@@ -58,7 +58,19 @@
 ///////////////////////////////
 
 // loop iteration delay time (msec)
-const int DELAY = 100;    // 20 is way too short, 50 is ok, 200 seems clumsy
+const int DELAY = 80;    // 20 is way too short, 50 is ok, 200 seems clumsy
+
+// LED modes
+const byte LED_OFF = 0;
+const byte LED_ON = 1;
+const byte LED_SLOW_BLINK = 2;
+const byte LED_FAST_BLINK = 3;
+
+// LED blink intervals
+// each value must be greater than DELAY for it to work as intended
+const unsigned long FAST_BLINK = 500;      // ON and OFF times are equal
+const unsigned long SLOW_BLINK_ON = 100; 
+const unsigned long SLOW_BLINK_OFF = 900;
 
 // Exciters I/F
 // Communication: Serial/L, Serial3/R
@@ -94,10 +106,10 @@ const byte BPF_PWR[2] = {    // powering relay L,R pins
   6, A0};
 const byte BPF[2][6] = {    // band control pins
   {
-    7, 8, 9, 10, 11, 13                                                        }      // 160,80,40,20,15,10m/L
+    7, 8, 9, 10, 11, 13                                                                                      }      // 160,80,40,20,15,10m/L
   ,
   {
-    A2, A3, A4, A5, A6, A7                                                        }   // 160,80,40,20,15,10m/R
+    A2, A3, A4, A5, A6, A7                                                                                      }   // 160,80,40,20,15,10m/R
 };
 const int BPF_BANDS[10] = {
   // corresponding the array index above, NO_MATCH is for WARC, 6m
@@ -115,6 +127,20 @@ const byte ZUY_HEX = 0x7A;    // IC-7600 for compatibility reasons
 byte bMake[2];    // make: Kenwood = 0, ICOM = 1, Yaesu = 2
 long lFreq[2];    // frequency
 int iBand[2];     // band
+
+// LED blinking control
+byte excLEDMode[2] = {      // 0 = OFF, 1 = ON, etc as defined in constants
+  LED_OFF, LED_OFF};
+byte ampLEDMode[2] = {
+  LED_OFF, LED_OFF};
+byte excLEDState[2] = {     // set initial states
+  LOW, LOW};  // green
+byte ampLEDState[2] = {
+  LOW, LOW};  // red
+unsigned long lastMillisFast;        // holds start of the last blink in millis for measuring intervals
+unsigned long elapMillisFast;        // holds elapsed millis since the start
+unsigned long lastMillisSlow;
+unsigned long elapMillisSlow;
 
 // Pointers
 HardwareSerial *pExcSer[2], *pAmpSer[2];
@@ -135,11 +161,11 @@ void setup() {
       pinMode(BPF[i][j], OUTPUT);
   }
 
-  // put LEDs OFF, BPF PWR on
+  // put LEDs OFF, BPF PWR off
   for (int i = 0; i < 2; i++) {
     digitalWrite(EXC_LED[i], LOW);
     digitalWrite(AMP_LED[i], LOW);
-    digitalWrite(BPF_PWR[i], HIGH);
+    digitalWrite(BPF_PWR[i], LOW);
   }
 
   // read Make DIPSW
@@ -160,19 +186,19 @@ void setup() {
     // exciter
     if (bMake[i] != ICOM) {
       // Kenwood or Yaesu
-      pExc[i] = new RigUtil(pExcSer[i], bMake[i]);
-      pExcSer[i]->begin(EXC_SPEED[i], KENWOOD_PARAM);    // Yaesu yet unsupported
+      pExc[i] = new RigUtil(pExcSer[i], EXC_SPEED[i], KENWOOD_PARAM, bMake[i]);
     } 
     else {
       // ICOM
-      pExc[i] = new RigUtil(pExcSer[i], bMake[i], EXC_HEX[i], ZUY_HEX);
-      pExcSer[i]->begin(EXC_SPEED[i], ICOM_PARAM);
+      pExc[i] = new RigUtil(pExcSer[i], EXC_SPEED[i], ICOM_PARAM, bMake[i], EXC_HEX[i], ZUY_HEX);
     }
 
     // amplifier
-    pAmp[i] = new RigUtil(pAmpSer[i], ICOM, AMP_HEX[i], ZUY_HEX);
-    pAmpSer[i]->begin(AMP_SPEED[i], ICOM_PARAM);
+    pAmp[i] = new RigUtil(pAmpSer[i], AMP_SPEED[i], ICOM_PARAM, ICOM, AMP_HEX[i], ZUY_HEX);
   }
+
+  // initialise blink timers
+  lastMillisFast = lastMillisSlow = millis();
 }
 
 ///////////////////////////////
@@ -187,9 +213,9 @@ void loop() {
 
     // put exciter LED
     if (lFreq[i] != NOFREQ)
-      digitalWrite(EXC_LED[i], HIGH);
+      excLEDMode[i] = LED_ON;
     else
-      digitalWrite(EXC_LED[i], LOW);
+      excLEDMode[i] = LED_OFF;
 
     // get band index (0..9), cf.BANDS[10][3] array in RigUtil.h
     iBand[i] = pExc[i]->getBand(lFreq[i]);
@@ -206,15 +232,35 @@ void loop() {
     setBPFRelays(i, iPosit);
 
     // set amplifier band and put LED
-    if (pAmp[i]->setFreq(lFreq[i]) == true) {
-      digitalWrite(AMP_LED[i], HIGH);
-    }    
-    else {
-      digitalWrite(AMP_LED[i], LOW);
+    ampLEDMode[i] = LED_OFF;
+    if (lFreq[i] != NOFREQ)
+      if (pAmp[i]->setFreq(lFreq[i]) == true)
+        ampLEDMode[i] = LED_ON;
+  }
+
+  // check for abberant band status ('out of band' and band clashing) and put LEDs blink accordingly
+  for (int i = 0; i < 2; i++) {
+    if (excLEDMode[i] == LED_ON) {
+      // this side of exciter responded with freq
+      if (iBand[i] == NO_MATCH) {
+        // out of ham bands of interest
+        excLEDMode[i] = LED_SLOW_BLINK;    // both exciter and amplifier LEDs will slow blink
+        ampLEDMode[i] = LED_SLOW_BLINK;
+      } 
+      // inside ham bands of interest
+      else if (iBand[0] == iBand[1]) {  // this part redundantly runs twice for each i (0,1)
+        // bands clash!!
+        excLEDMode[0] = excLEDMode[1] = LED_FAST_BLINK;
+        ampLEDMode[0] = ampLEDMode[1] = LED_FAST_BLINK;
+      }
     }
   }
 
-  // check band clashing
+  // actually put LEDs
+  elapMillisFast = millis() - lastMillisFast;
+  elapMillisSlow = millis() - lastMillisSlow;
+  putLEDs(EXC_LED, excLEDMode, excLEDState);
+  putLEDs(AMP_LED, ampLEDMode, ampLEDState);
 
   delay(DELAY);
 }
@@ -227,6 +273,7 @@ void loop() {
 void setBPFRelays(int iSide, int iPosit) {
   if (iPosit != NO_MATCH) {
     // HF contest band
+    digitalWrite(BPF_PWR[iSide], HIGH);     // power on BPF
     for (int j = 0; j < 6; j++) {
       if (j == iPosit)
         digitalWrite(BPF[iSide][j], HIGH);  // switch on the band at BPF
@@ -236,8 +283,58 @@ void setBPFRelays(int iSide, int iPosit) {
   } 
   else {
     // outside HF contest bands (incl. WARC, 6m)
-    for (int j = 0; j < 6; j++) {
-      digitalWrite(BPF[iSide][j], LOW);     // switch off all relays
+//    for (int j = 0; j < 6; j++) {
+//      digitalWrite(BPF[iSide][j], LOW);     // switch off all relays
+//    }
+    digitalWrite(BPF_PWR[iSide], LOW);      // power off BPF
+  }
+}
+
+// LED control (incl. blinking)
+void putLEDs(const byte *pLEDs, byte *pModes, byte *pStates) {
+  if (pModes[0] == LED_FAST_BLINK) {
+    // for fast blinks, do jobs for both LEDs at the same time
+    if (elapMillisFast < FAST_BLINK) {
+      pStates[0] = HIGH;
+      pStates[1] = LOW;
+      digitalWrite(pLEDs[0], HIGH);  // turn on L LED for a blink
+      digitalWrite(pLEDs[1], LOW);   // turn off R LED for a blink
+    } 
+    else if (elapMillisFast >= FAST_BLINK && elapMillisFast < 2 * FAST_BLINK) {
+      pStates[0] = LOW;
+      pStates[1] = HIGH;
+      digitalWrite(pLEDs[0], LOW);   // turn off L LED for a blink
+      digitalWrite(pLEDs[1], HIGH);  // turn on R LED for a blink
+    } 
+    else if (elapMillisFast >= 2 * FAST_BLINK) {
+      lastMillisFast = millis();
+    }
+  } 
+  else {
+    // either LED_OFF, LED_ON or LED_SLOW_BLINK
+    // do separately for each side
+    for (int i = 0; i < 2; i++) {
+      switch (pModes[i]) {
+      case LED_OFF:
+        digitalWrite(pLEDs[i], LOW);
+        break;
+      case LED_ON:
+        digitalWrite(pLEDs[i], HIGH);
+        break;
+      case LED_SLOW_BLINK:
+        if (elapMillisSlow < SLOW_BLINK_ON) {
+          pStates[i] = HIGH;
+          digitalWrite(pLEDs[i], HIGH);  // turn on for a blink
+        } 
+        else if (elapMillisSlow >= SLOW_BLINK_ON && elapMillisSlow < SLOW_BLINK_ON + SLOW_BLINK_OFF) {
+          pStates[i] = LOW;
+          digitalWrite(pLEDs[i], LOW);   // turn off for a blink
+        } 
+        else if (elapMillisSlow >= SLOW_BLINK_ON + SLOW_BLINK_OFF) {
+          lastMillisSlow = millis();
+        }
+        break;
+      }
     }
   }
 }

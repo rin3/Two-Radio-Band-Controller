@@ -6,17 +6,19 @@
 ///////////////////////////////
 
 // Kenwood, Yaesu
-RigUtil::RigUtil(HardwareSerial *pSerial, byte bMake) {
+RigUtil::RigUtil(HardwareSerial *pSerial, int iCOMSpeed, int iCOMParam, byte bMake) {
   _pSerial = pSerial;
   _bMake = bMake;
+  _pSerial->begin(iCOMSpeed, iCOMParam);
 }
 
 // ICOM
-RigUtil::RigUtil(HardwareSerial *pSerial, byte bMake, byte bToHex, byte bFromHex) {
+RigUtil::RigUtil(HardwareSerial *pSerial, int iCOMSpeed, int iCOMParam, byte bMake, byte bToHex, byte bFromHex) {
   _pSerial = pSerial;
   _bMake = bMake;
   _bToHex = bToHex;
   _bFromHex = bFromHex;
+  _pSerial->begin(iCOMSpeed, iCOMParam);
 }
 
 ///////////////////////////////
