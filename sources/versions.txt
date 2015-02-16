@@ -13,3 +13,6 @@ Initial working version for the prototype hardware.
 Final version for the prototype hardware.
 - BPF is again powered off while outside the pass bands.
 - Small coding fix (constructors).
+
+0.4 (currently working on, started coding for a release version)
+- 
