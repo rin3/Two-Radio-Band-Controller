@@ -115,6 +115,26 @@ const int BPF_BANDS[10] = {
   // corresponding the array index above, NO_MATCH is for WARC, 6m
   0, 1, 2, NO_MATCH, 3, NO_MATCH, 4, NO_MATCH, 5, NO_MATCH};
 
+// EEPROM addresses
+const int ROM_MAKE_L = 0;
+const int ROM_MAKE_R = 1;
+// ICOM HEX codes
+const int ROM_ZUY_HEX = 2;
+const int ROM_EXC_L_HEX = 3;
+const int ROM_EXC_R_HEX = 4;
+const int ROM_AMP_L_HEX = 5;
+const int ROM_AMP_R_HEX = 6;
+// Speed of serial communication
+const int ROM_EXC_L_SPEED = 7;
+const int ROM_EXC_R_SPEED = 8;
+const int ROM_AMP_L_SPEED = 9;
+const int ROM_AMP_R_SPEED = 10;
+// Parameters of serial communication
+const int ROM_EXC_L_PARAM = 11;
+const int ROM_EXC_R_PARAM = 12;
+const int ROM_AMP_L_PARAM = 13;
+const int ROM_AMP_R_PARAM = 14;
+
 // ICOM HEX code for ZUYmaster
 //const byte ZUY_HEX = 0xE0;  // PC
 const byte ZUY_HEX = 0x7A;    // IC-7600 for compatibility reasons
