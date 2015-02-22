@@ -1,0 +1,9 @@
+C:\Users\Rin\documents\visual studio 2010\Projects\ZUYmaster\ZUYmaster\bin\Debug\ZUYmaster.exe.config
+C:\Users\Rin\documents\visual studio 2010\Projects\ZUYmaster\ZUYmaster\obj\x86\Debug\ZUYmaster.csprojResolveAssemblyReference.cache
+C:\Users\Rin\documents\visual studio 2010\Projects\ZUYmaster\ZUYmaster\obj\x86\Debug\ZUYmaster.Form1.resources
+C:\Users\Rin\documents\visual studio 2010\Projects\ZUYmaster\ZUYmaster\obj\x86\Debug\ZUYmaster.Properties.Resources.resources
+C:\Users\Rin\documents\visual studio 2010\Projects\ZUYmaster\ZUYmaster\obj\x86\Debug\ZUYmaster.csproj.GenerateResource.Cache
+C:\Users\Rin\documents\visual studio 2010\Projects\ZUYmaster\ZUYmaster\bin\Debug\ZUYmaster.exe
+C:\Users\Rin\documents\visual studio 2010\Projects\ZUYmaster\ZUYmaster\bin\Debug\ZUYmaster.pdb
+C:\Users\Rin\documents\visual studio 2010\Projects\ZUYmaster\ZUYmaster\obj\x86\Debug\ZUYmaster.exe
+C:\Users\Rin\documents\visual studio 2010\Projects\ZUYmaster\ZUYmaster\obj\x86\Debug\ZUYmaster.pdb

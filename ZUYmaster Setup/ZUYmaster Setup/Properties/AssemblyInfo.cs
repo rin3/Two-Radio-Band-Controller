@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ZUYmaster Setup")]
+[assembly: AssemblyTitle("ZUYmaster")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("ZUYmaster Setup")]
+[assembly: AssemblyProduct("ZUYmaster")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("aea56eaf-8bd0-4f3d-98a2-91a3562ae41e")]
+[assembly: Guid("18895e14-ee45-4e68-8997-5b336f11aff5")]
 
 // Version information for an assembly consists of the following four values:
 //

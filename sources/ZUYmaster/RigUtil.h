@@ -12,6 +12,9 @@ const byte KENWOOD = 0;
 const byte ICOM = 1;
 const byte YAESU = 2;
 
+const long COM_SPEED[] = {
+  300, 1200, 4800, 9600, 19200, 38400, 57600, 115200};
+
 // Length of commands and responses in bytes
 const int KENWOOD_REPLY_LEN = 38;
 const int ICOM_QUERY_LEN = 6;       // frequency query
@@ -22,25 +25,25 @@ const int ICOM_TRANSFER_LEN = 11;   // frequency transfer
 // Band boundaries
 const long BANDS[10][3] = {
   {  // in meters, lower, upper
-    160, 1800000,  2000000  }
+    160, 1800000,  2000000    }
   ,{
-    80,  3500000,  4000000  }
+    80,  3500000,  4000000    }
   ,{
-    40,  7000000,  7300000  }
+    40,  7000000,  7300000    }
   ,{
-    30, 10100000, 10150000  }
+    30, 10100000, 10150000    }
   ,{
-    20, 14000000, 14350000  }
+    20, 14000000, 14350000    }
   ,{
-    17, 18068000, 18168000  }
+    17, 18068000, 18168000    }
   ,{
-    15, 21000000, 21450000  }
+    15, 21000000, 21450000    }
   ,{
-    12, 24890000, 24990000  }
+    12, 24890000, 24990000    }
   ,{
-    10, 28000000, 29700000  }
+    10, 28000000, 29700000    }
   ,{
-    6,  50000000, 54000000  }
+    6,  50000000, 54000000    }
 };
 const byte METERS = 0;
 const byte EDGE_L = 1;
@@ -95,6 +98,7 @@ private:
 };
 
 #endif
+
 
 
 

@@ -1,0 +1,12 @@
+C:\Users\Rin\Documents\Visual Studio 2010\Projects\ZUYmaster\ZUYmaster\bin\Debug\ZUYmaster.exe.config
+C:\Users\Rin\Documents\Visual Studio 2010\Projects\ZUYmaster\ZUYmaster\obj\x86\Debug\ZUYmaster.exe
+C:\Users\Rin\Documents\Visual Studio 2010\Projects\ZUYmaster\ZUYmaster\obj\x86\Debug\ZUYmaster.pdb
+C:\Users\Rin\Documents\GitHub\ZUYmaster\ZUYmaster Setup\ZUYmaster Setup\bin\Debug\ZUYmaster.exe.config
+C:\Users\Rin\Documents\GitHub\ZUYmaster\ZUYmaster Setup\ZUYmaster Setup\obj\x86\Debug\ZUYmaster.exe
+C:\Users\Rin\Documents\GitHub\ZUYmaster\ZUYmaster Setup\ZUYmaster Setup\obj\x86\Debug\ZUYmaster.pdb
+C:\Users\Rin\Documents\GitHub\ZUYmaster\ZUYmaster Setup\ZUYmaster Setup\bin\Debug\ZUYmaster.exe
+C:\Users\Rin\Documents\GitHub\ZUYmaster\ZUYmaster Setup\ZUYmaster Setup\bin\Debug\ZUYmaster.pdb
+C:\Users\Rin\Documents\GitHub\ZUYmaster\ZUYmaster Setup\ZUYmaster Setup\obj\x86\Debug\ZUYmaster Setup.csprojResolveAssemblyReference.cache
+C:\Users\Rin\Documents\GitHub\ZUYmaster\ZUYmaster Setup\ZUYmaster Setup\obj\x86\Debug\ZUYmaster.Properties.Resources.resources
+C:\Users\Rin\Documents\GitHub\ZUYmaster\ZUYmaster Setup\ZUYmaster Setup\obj\x86\Debug\ZUYmaster Setup.csproj.GenerateResource.Cache
+C:\Users\Rin\Documents\GitHub\ZUYmaster\ZUYmaster Setup\ZUYmaster Setup\obj\x86\Debug\ZUYmaster.frmSetup.resources
