@@ -13,5 +13,5 @@ The circuit consists of three boards:
 ###An SO2R setup
 ![](https://github.com/rin3/Two-Radio-Band-Controller/blob/master/images/SO2R.PNG)
 
-###An M/S or M/2 setup
+###An M/S or an M/2 setup
 ![](https://github.com/rin3/Two-Radio-Band-Controller/blob/master/images/MSM2.PNG)
