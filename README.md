@@ -10,8 +10,8 @@ The circuit consists of three boards:
 -	1 - Another PCB for exciter (Kenwood/ICOM) I/O
 
 ##Schemes
-An SO2R setup
+#An SO2R setup
 ![](https://github.com/rin3/Two-Radio-Band-Controller/blob/master/images/SO2R.PNG)
 
-An M/S or M/2 setup
+#An M/S or M/2 setup
 ![](https://github.com/rin3/Two-Radio-Band-Controller/blob/master/images/MSM2.PNG)
